@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="90fdf136-a342-4eb6-bbd7-0a10e597b78f" >
+		<http:listener-connection host="0.0.0.0" port="8089" />
+	</http:listener-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="de073b31-a4be-46c8-bf1d-5d7100d5149f" >
+		<salesforce:basic-connection username="abadit2007@gmail.com" password="abe@0913" securityToken="LCGHVu1Te5CN6dJGohrfl22ZW" />
+	</salesforce:sfdc-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="29757e6b-2829-4538-9beb-c09a9abf3df1" >
+		<db:my-sql-connection host="localhost" port="3306" user="kiya" password="kiya" database="muletrainingdb" />
+	</db:config>
+	<api-gateway:autodiscovery apiId="01" doc:name="API Autodiscovery" doc:id="0f4fec87-1c02-4874-b197-4396046d6ada" flowRef="abadisalesforceFlow" />
+	<flow name="abadisalesforceFlow" doc:id="b0544d1d-251c-46e6-a747-6fe9620c0149" >
+		<http:listener doc:name="Listener" doc:id="5a252349-d1fc-4764-95f5-1b81c628b23d" config-ref="HTTP_Listener_config" path="/sf"/>
+		<salesforce:query doc:name="Query" doc:id="3b2a523c-79cc-4f21-a7c4-0527d509cebb" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query >SELECT Name, LastModifiedDate, BillingPostalCode
+FROM Account where Name = ':nm'</salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	"nm" : payload.Name
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="53e601f2-3fe4-4343-954c-5bfb5cc544c8" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="Acc" ><![CDATA[%dw 2.0
+output application/json
+---
+payload[0]]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<db:insert doc:name="Insert" doc:id="e6687b0b-a996-4744-b274-add3f1043f2a" config-ref="Database_Config">
+			<db:sql >insert into acc(LastModifiedDate,BillingPostalCode,Name) values(:LM,:BP,:NM)</db:sql>
+			<db:input-parameters ><![CDATA[#[{'LM':vars.Acc.LastModifiedDate,'BP':vars.Acc.BillingPostalCode,'NM':vars.Acc.Name}]]]></db:input-parameters>
+		</db:insert>
+		<set-payload value="One recored has been updated " doc:name="Set Payload" doc:id="de685bd1-79c0-4ae8-affd-a4e0a1b8976a" />
+	</flow>
+</mule>
