@@ -1,0 +1,5 @@
+training:
+  host: "ilt.learn.mulesoft.com"
+  port: "80"
+  basepath: "/"
+  protocol: "HTTP"
